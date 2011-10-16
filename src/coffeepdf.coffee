@@ -5,11 +5,16 @@ class window.jsPDF
 		drawColor: "0 G"
 		lineWidth: 0.200025
 		pageFormats: # Size in pt of various paper formats
-			a3: [841.89, 1190.55]
-			a4: [595.28, 841.89]
-			a5: [420.94, 595.28]
-			letter: [612, 792]
-			legal: [612, 1008]
+			a3:
+				width: 841.89, height: 1190.55
+			a4:
+				width: 595.28, height: 841.89
+			a5:
+				width: 420.94, height: 595.28
+			letter:
+				width: 612, height: 792
+			legal:
+				width: 612, height: 1008
 		textColor: "0 g"
 		pdfVersion: "1.3"
 		version: "20100328"
@@ -31,12 +36,12 @@ class window.jsPDF
 					@out("BT /F1 " + parseInt(@fontSize) + ".00 Tf ET")
 					@pageFontSize = @fontSize
 					
-				str = sprintf("BT %.2f %.2f Td (%s) Tj ET", x * @scaleFactor, (@pageHeight - y) * @scaleFactor, @pdfEscape(text))
+				str = sprintf("BT %.2f %.2f Td (%s) Tj ET", x * @scaleFactor, (@pageSize.height - y) * @scaleFactor, @pdfEscape(text))
 				@out(str)
 				@jsPDF
 
 			line: (x1, y1, x2, y2) =>
-				str = sprintf("%.2f %.2f m %.2f %.2f l S",x1 * @scaleFactor, (@pageHeight - y1) * @scaleFactor, x2 * @scaleFactor, (@pageHeight - y2) * @scaleFactor)
+				str = sprintf("%.2f %.2f m %.2f %.2f l S",x1 * @scaleFactor, (@pageSize.height - y1) * @scaleFactor, x2 * @scaleFactor, (@pageSize.height - y2) * @scaleFactor)
 				@out(str)
 				@jsPDF
 
@@ -46,7 +51,7 @@ class window.jsPDF
 					op = "f"
 				else if style is "FD" or style is "DF"
 					op = "B"
-				@out(sprintf("%.2f %.2f %.2f %.2f re %s", x * @scaleFactor, (@pageHeight - y) * @scaleFactor, w * @scaleFactor, -h * @scaleFactor, op))
+				@out(sprintf("%.2f %.2f %.2f %.2f re %s", x * @scaleFactor, (@pageSize.height - y) * @scaleFactor, w * @scaleFactor, -h * @scaleFactor, op))
 
 			setProperties: (properties) =>
 				@documentProperties = properties
@@ -85,7 +90,7 @@ class window.jsPDF
 		if @orientation is "l" then @orientation = "landscape"
 		
 		if @orientation is "landscape"
-			[@pageWidth, @pageHeight] = [@pageHeight, @pageWidth]
+			[@pageSize.width, @pageSize.height] = [@pageSize.height, @pageSize.width]
 		else if @orientation isnt "portrait"
 			throw "Invalid orientation #{ orientation }"
 		
@@ -93,12 +98,13 @@ class window.jsPDF
 		if typeof @format is "string"
 			@format = @format.toLowerCase()
 			if @format of @constants.pageFormats
-				@pageHeight = @constants.pageFormats[@format][1] / @scaleFactor
-				@pageWidth = @constants.pageFormats[@format][0] / @scaleFactor
+				@pageSize = @constants.pageFormats[@format]
+				@pageSize.height /= @scaleFactor
+				@pageSize.width /= @scaleFactor
 			else
 				throw "Invalid format #{ @format }"
 		else
-			[@pageWidth, @pageHeight] = @format
+			[@pageSize.width, @pageSize.height] = @format
 		
 	getScaleFactor: ->
 		switch @unit
@@ -118,8 +124,8 @@ class window.jsPDF
 		
 	putPages: ->
 		pointSize =
-			height: @pageHeight * @scaleFactor
-			width: @pageWidth * @scaleFactor
+			height: @pageSize.height * @scaleFactor
+			width: @pageSize.width * @scaleFactor
 			
 		for n in [1..@page]
 			@newObject()
@@ -304,7 +310,6 @@ class window.jsPDF
 	offsets: []
 	page: 0
 	pageFontSize: 16
-	pageHeight: undefined
-	pageWidth: undefined
+	pageSize: {}
 	pages: []
 	state: 0
