@@ -1,7 +1,7 @@
 <!doctype>
 <html>
 <head>
-	<title>jsPDF</title>
+	<title>CoffeePDF</title>
 	<style type="text/css">
 		* { padding: 0; margin: 0; }
 		body {
@@ -40,12 +40,12 @@
 
 <body>
 
-<h1>jsPDF Demos</h1>
+<h1>CoffeePDF Demos</h1>
 
-<p>Examples for using jsPDF with Data URIs below. Go <a href="http://jspdf.googlecode.com/">back to project homepage</a>.</p>
+<p>Examples for using CoffeePDF with Data URIs below.</p>
 
 <h2>Simple Two-page Text Document</h2>
-<pre>var doc = new jsPDF().create();
+<pre>var doc = new CoffeePDF().create();
 doc.text(20, 20, 'Hello world!');
 doc.text(20, 30, 'This is client-side Javascript, pumping out a PDF.');
 doc.addPage();
@@ -56,7 +56,7 @@ doc.output('datauri');</pre>
 <a href="javascript:demo1()">Run Code</a>
 
 <h2>Different font sizes</h2>
-<pre>var doc = new jsPDF().create();
+<pre>var doc = new CoffeePDF().create();
 doc.setFontSize(22);
 doc.text(20, 20, 'This is a title');
 
@@ -69,7 +69,7 @@ doc.output('datauri');</pre>
 
 
 <h2>Adding metadata</h2>
-<pre>var doc = new jsPDF().create();
+<pre>var doc = new CoffeePDF().create();
 doc.text(20, 20, 'This PDF has a title, subject, author, keywords and a creator.');
 
 // Optional - set properties on the document
@@ -91,7 +91,7 @@ doc.output('datauri');</pre>
 var multiplier = prompt('Enter a number:');
 multiplier = parseInt(multiplier);
 
-var doc = new jsPDF().create();
+var doc = new CoffeePDF().create();
 doc.setFontSize(22);	
 doc.text(20, 20, 'Questions');
 doc.setFontSize(16);
@@ -117,7 +117,7 @@ doc.output('datauri');</pre>
 <script type="text/javascript">
 
 function demo1() {
-	var doc = new jsPDF().create();
+	var doc = new CoffeePDF().create();
 	doc.text(20, 20, 'Hello world!');
 	doc.text(20, 30, 'This is client-side Javascript, pumping out a PDF.');
 	doc.addPage();
@@ -128,7 +128,7 @@ function demo1() {
 }
 
 function demo2() {
-	var doc = new jsPDF().create();
+	var doc = new CoffeePDF().create();
 	doc.setFontSize(22);
 	doc.text(20, 20, 'This is a title');
 
@@ -140,7 +140,7 @@ function demo2() {
 }
 
 function demo3() {
-	var doc = new jsPDF().create();
+	var doc = new CoffeePDF().create();
 	doc.text(20, 20, 'This PDF has a title, subject, author, keywords and a creator.');
 
 	// Optional - set properties on the document
@@ -161,7 +161,7 @@ function demo4() {
 	var multiplier = prompt('Enter a number:');
 	multiplier = parseInt(multiplier);
 
-	var doc = new jsPDF().create();
+	var doc = new CoffeePDF().create();
 	doc.setFontSize(22);	
 	doc.text(20, 20, 'Questions');
 	doc.setFontSize(16);
