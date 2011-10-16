@@ -1,4 +1,4 @@
-class window.jsPDF
+class window.CoffeePDF
 	constructor: (@orientation = "P", @unit = "mm", @format = "a4") ->
 		
 	constants:
@@ -32,17 +32,15 @@ class window.jsPDF
 				
 			text: (x, y, text) =>
 				# need page height
-				if @pageFontSize != @fontSize
+				if @pageFontSize isnt @fontSize
 					@out("BT /F1 " + parseInt(@fontSize) + ".00 Tf ET")
 					@pageFontSize = @fontSize
 					
-				str = sprintf("BT %.2f %.2f Td (%s) Tj ET", x * @scaleFactor, (@pageSize.height - y) * @scaleFactor, @pdfEscape(text))
-				@out(str)
+				@out(sprintf("BT %.2f %.2f Td (%s) Tj ET", x * @scaleFactor, (@pageSize.height - y) * @scaleFactor, @pdfEscape(text)))
 				@jsPDF
 
 			line: (x1, y1, x2, y2) =>
-				str = sprintf("%.2f %.2f m %.2f %.2f l S",x1 * @scaleFactor, (@pageSize.height - y1) * @scaleFactor, x2 * @scaleFactor, (@pageSize.height - y2) * @scaleFactor)
-				@out(str)
+				@out(sprintf("%.2f %.2f m %.2f %.2f l S", x1 * @scaleFactor, (@pageSize.height - y1) * @scaleFactor, x2 * @scaleFactor, (@pageSize.height - y2) * @scaleFactor))
 				@jsPDF
 
 			rect: (x, y, w, h, style) =>
@@ -53,8 +51,7 @@ class window.jsPDF
 					op = "B"
 				@out(sprintf("%.2f %.2f %.2f %.2f re %s", x * @scaleFactor, (@pageSize.height - y) * @scaleFactor, w * @scaleFactor, -h * @scaleFactor, op))
 
-			setProperties: (properties) =>
-				@documentProperties = properties
+			setProperties: (@documentProperties) =>
 				@jsPDF
 				
 			addImage: (imageData, format, x, y, w, h) =>
@@ -62,12 +59,12 @@ class window.jsPDF
 				
 			output: (type, options) =>
 				@endDocument()
-				if type is undefined
-					return @buffer
 				if type is "datauri"
 					document.location.href = "data:application/pdf;base64," + Base64.encode(@buffer)
-			setFontSize: (size) =>
-				@fontSize = size
+				else
+					@buffer
+			
+			setFontSize: (@fontSize) =>
 				@jsPDF
 				
 			setLineWidth: (width) =>
@@ -81,8 +78,6 @@ class window.jsPDF
 					color = sprintf("%.3f %.3f %.3f RG", r/255, g/255, b/255)
 				@out(color)
 				@jsPDF
-		
-		return @jsPDF	
 		
 	getOrientation: ->
 		@orientation = @orientation.toLowerCase()
@@ -132,13 +127,13 @@ class window.jsPDF
 			@out("<</Type /Page")
 			@out("/Parent 1 0 R")	
 			@out("/Resources 2 0 R")
-			@out("/Contents " + (@objectNumber + 1) + " 0 R>>")
+			@out("/Contents #{ @objectNumber + 1 } 0 R>>")
 			@out("endobj")
 			
 			# Page content
 			p = @pages[n]
 			@newObject()
-			@out("<</Length " + p.length  + ">>")
+			@out("<</Length #{ p.length }>>")
 			@putStream(p)
 			@out("endobj")
 			
@@ -201,30 +196,24 @@ class window.jsPDF
 		#@TODO
 		
 	putInfo: ->
-		@out("/Producer (jsPDF " + @constants.version + ")")
-		if @documentProperties.title isnt undefined
-			@out("/Title (" + @pdfEscape(@documentProperties.title) + ")")
+		@out("/Producer (jsPDF #{ @constants.version })")
+		if @documentProperties.title?
+			@out("/Title (#{ @pdfEscape(@documentProperties.title) })")
 
-		if @documentProperties.subject isnt undefined
-			@out("/Subject (" + @pdfEscape(@documentProperties.subject) + ")")
+		if @documentProperties.subject?
+			@out("/Subject (#{ @pdfEscape(@documentProperties.subject) })")
 		
-		if @documentProperties.author isnt undefined
-			@out("/Author (" + @pdfEscape(@documentProperties.author) + ")")
+		if @documentProperties.author?
+			@out("/Author (#{ @pdfEscape(@documentProperties.author) })")
 
-		if @documentProperties.keywords isnt undefined
-			@out("/Keywords (" + @pdfEscape(@documentProperties.keywords) + ")")
+		if @documentProperties.keywords?
+			@out("/Keywords (#{ @pdfEscape(@documentProperties.keywords) })")
 
-		if @documentProperties.creator isnt undefined
-			@out("/Creator (" + @pdfEscape(@documentProperties.creator) + ")")
+		if @documentProperties.creator?
+			@out("/Creator (#{ @pdfEscape(@documentProperties.creator) })")
 
 		created = new Date()
-		year = created.getFullYear()
-		month = (created.getMonth() + 1)
-		day = created.getDate()
-		hour = created.getHours()
-		minute = created.getMinutes()
-		second = created.getSeconds()
-		@out("/CreationDate (D:" + sprintf("%02d%02d%02d%02d%02d%02d", year, month, day, hour, minute, second) + ")")
+		@out("/CreationDate (D:" + sprintf("%02d%02d%02d%02d%02d%02d", created.getFullYear(), (created.getMonth() + 1), created.getDate(), created.getHours(), created.getMinutes(), created.getSeconds()) + ")")
 		
 	putCatalog: ->
 		@out("/Type /Catalog")
@@ -234,9 +223,9 @@ class window.jsPDF
 		@out("/PageLayout /OneColumn")	
 	
 	putTrailer: ->
-		@out("/Size " + (@objectNumber + 1))
-		@out("/Root " + @objectNumber + " 0 R")
-		@out("/Info " + (@objectNumber - 1) + " 0 R")
+		@out("/Size #{ @objectNumber + 1 }")
+		@out("/Root #{ @objectNumber } 0 R")
+		@out("/Info #{ (@objectNumber - 1) } 0 R")
 	
 	endDocument: ->
 		@state = 1
@@ -283,9 +272,9 @@ class window.jsPDF
 	
 	out: (string) ->
 		if @state is 2
-			@pages[@page] += string + "\n"
+			@pages[@page] += "#{ string }\n"
 		else
-			@buffer += string + "\n"
+			@buffer += "#{ string }\n"
 	
 	addPage: ->
 		@beginPage()
@@ -298,7 +287,7 @@ class window.jsPDF
 		# 16 is the font size
 		@pageFontSize = @fontSize
 		@out("BT /F1 " + parseInt(@fontSize) + ".00 Tf ET")
-	# Escape text
+
 	pdfEscape: (text) ->
 		text.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)")
 		
