@@ -5,7 +5,8 @@
 	<style type="text/css">
 		* { padding: 0; margin: 0; }
 		body {
-			padding: 30px;
+			font-size: 16px;
+			padding: 2em;
 			font-family: Arial, Helvetica, sans-serif;
 		}
 		h1 {
@@ -18,171 +19,99 @@
 			border-bottom: 1px solid #ccc;
 		}
 
-		pre {
-			border: 1px dotted #ccc;
-			background: #f7f7f7;
-			padding: 10px;
-			margin-bottom: 1em;
+		div.example {
+			height: 100%;
+			width: 100%;
 		}
-        
-        h1 {
-            margin-bottom: 0.7em;
-        }
-        
-        h2 {
-            margin-top: 1em;
-        }
+			div.example div.example-panel {
+				background: #f7f7f7;
+				border: 1px dotted #ccc;
+				height: 80%;
+				margin: 1%;
+				padding: 1%;
+				float: left;
+				overflow-x: scroll;
+				width: 44%;
+			}
+			div.example pre,
+			div.example iframe {
+				height: 90%;
+				width: 100%;
+			}
+			div.example pre {
+				font-size: 12px;
+			}
 	</style>
-	<script type="text/javascript" src="../lib/base64.js"></script>
-	<script type="text/javascript" src="../lib/sprintf.js"></script>
+	<script type="text/javascript" src="http://crypto-js.googlecode.com/files/2.3.0-crypto-min.js"></script>
 	<script type="text/javascript" src="../lib/coffeepdf.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
 </head>
 
 <body>
 
-<h1>CoffeePDF Demos</h1>
+<h1>CoffeePDF Live Demo</h1>
 
-<p>Examples for using CoffeePDF with Data URIs below.</p>
+<script>
 
-<h2>Simple Two-page Text Document</h2>
-<pre>var doc = new CoffeePDF().create();
-doc.text(20, 20, 'Hello world!');
-doc.text(20, 30, 'This is client-side Javascript, pumping out a PDF.');
-doc.addPage();
-doc.text(20, 20, 'Do you like that?');
+	$(function() {
 
-// Output as Data URI
-doc.output('datauri');</pre>
-<a href="javascript:demo1()">Run Code</a>
-
-<h2>Different font sizes</h2>
-<pre>var doc = new CoffeePDF().create();
-doc.setFontSize(22);
-doc.text(20, 20, 'This is a title');
-
-doc.setFontSize(16);
-doc.text(20, 30, 'This is some normal sized text underneath.');	
-
-// Output as Data URI
-doc.output('datauri');</pre>
-<a href="javascript:demo2()">Run Code</a>
-
-
-<h2>Adding metadata</h2>
-<pre>var doc = new CoffeePDF().create();
-doc.text(20, 20, 'This PDF has a title, subject, author, keywords and a creator.');
-
-// Optional - set properties on the document
-doc.setProperties({
-	title: 'Title',
-	subject: 'This is the subject',		
-	author: 'James Hall',
-	keywords: 'generated, javascript, web 2.0, ajax',
-	creator: 'MEEE'
-});
-
-// Output as Data URI
-doc.output('datauri');</pre>
-<a href="javascript:demo3()">Run Code</a>
-
-
-<h2>Example of user input</h2>
-<pre>var name = prompt('What is your name?');
-var multiplier = prompt('Enter a number:');
-multiplier = parseInt(multiplier);
-
-var doc = new CoffeePDF().create();
-doc.setFontSize(22);	
-doc.text(20, 20, 'Questions');
-doc.setFontSize(16);
-doc.text(20, 30, 'This belongs to: ' + name);
-
-for(var i = 1; i <= 12; i ++) {
-	doc.text(20, 30 + (i * 10), i + ' x ' + multiplier + ' = ___');
+function getImageData(src, cb) {
+	var canvas = document.createElement("canvas");
+	var image = document.createElement("img");
+	var ctx = canvas.getContext("2d");
+	var url;
+	
+	image.onload = function() {
+		canvas.width = image.width;
+		canvas.height = image.height;
+		ctx.drawImage(image, 0, 0, image.width, image.height);
+		cb(canvas.toDataURL().slice(22), { width: image.width, height: image.height });
+	};
+	
+	image.crossOrigin = "anonymous";
+	image.src = src;
 }
+		
+function createDocument() {
+	var doc = new CoffeePDF();
+	var url = "https://lh5.googleusercontent.com/-q-yReXx-G68/Tfe_W5I2HZI/AAAAAAAAKHo/-qu4TPEynSM/s640/DSCF8027.JPG";
+	getImageData(url, function(imageData, imageSize) {
+		
+		doc.addText("Hello, world!", { x: 20, y: 20 });
+		doc.addPath([{ x: 32, y: 82 }, { x: 82, y: 82 }, { x: 98, y: 98 }, { x: 48, y: 98 }, { x: 32, y: 82 }], [192, 64, 64], [240, 240, 240]);
+		doc.addRectangle({ x: 32, y: 32 }, { width: 50, height: 50}, [192, 192, 64], [240, 240, 240]);
+		doc.addRectangle({ x: 48, y: 48 }, { width: 50, height: 50}, [64, 192, 192]);
+		doc.addPath([{ x: 32, y: 32 }, { x: 82, y: 32 }, { x: 98, y: 48 }, { x: 48, y: 48 }, { x: 32, y: 32 }], [192, 64, 192]);
+		doc.addText("Cube!", { x: 64, y: 72 });
 
-doc.addPage();
-doc.setFontSize(22);
-doc.text(20, 20, 'Answers');
-doc.setFontSize(16);
+		doc.addImage(
+			{ x: 20, y: 200 },
+			{ height: imageSize.height, width: imageSize.width },
+			imageData
+		);
 
-for(var i = 1; i <= 12; i ++) {
-	doc.text(20, 30 + (i * 10), i + ' x ' + multiplier + ' = ' + (i * multiplier));
-}	
-doc.output('datauri');</pre>
-<a href="javascript:demo4()">Run Code</a>
-
-
-
-<script type="text/javascript">
-
-function demo1() {
-	var doc = new CoffeePDF().create();
-	doc.text(20, 20, 'Hello world!');
-	doc.text(20, 30, 'This is client-side Javascript, pumping out a PDF.');
-	doc.addPage();
-	doc.text(20, 20, 'Do you like that?');
-
-	// Output as Data URI
-	doc.output('datauri');
-}
-
-function demo2() {
-	var doc = new CoffeePDF().create();
-	doc.setFontSize(22);
-	doc.text(20, 20, 'This is a title');
-
-	doc.setFontSize(16);
-	doc.text(20, 30, 'This is some normal sized text underneath.');	
-
-	// Output as Data URI
-	doc.output('datauri');
-}
-
-function demo3() {
-	var doc = new CoffeePDF().create();
-	doc.text(20, 20, 'This PDF has a title, subject, author, keywords and a creator.');
-
-	// Optional - set properties on the document
-	doc.setProperties({
-		title: 'Title',
-		subject: 'This is the subject',		
-		author: 'James Hall',
-		keywords: 'generated, javascript, web 2.0, ajax',
-		creator: 'MEEE'
+		$("div.example")
+			.append(
+				$("<div />", { "class": "example-panel" })
+					.append($("<iframe />", { src: doc.build().toDataUri() }))
+			);
 	});
 
-	// Output as Data URI
-	doc.output('datauri');
 }
-
-function demo4() {	
-	var name = prompt('What is your name?');
-	var multiplier = prompt('Enter a number:');
-	multiplier = parseInt(multiplier);
-
-	var doc = new CoffeePDF().create();
-	doc.setFontSize(22);	
-	doc.text(20, 20, 'Questions');
-	doc.setFontSize(16);
-	doc.text(20, 30, 'This belongs to: ' + name);
-
-	for(var i = 1; i <= 12; i ++) {
-		doc.text(20, 30 + (i * 10), i + ' x ' + multiplier + ' = ___');
-	}
-
-	doc.addPage();
-	doc.setFontSize(22);
-	doc.text(20, 20, 'Answers');
-	doc.setFontSize(16);
-
-	for(var i = 1; i <= 12; i ++) {
-		doc.text(20, 30 + (i * 10), i + ' x ' + multiplier + ' = ' + (i * multiplier));
-	}	
-	doc.output('datauri');
-
-}
-
+		
+		$("body")
+			.append(
+				$("<div />", { "class": "example" })
+					.append(
+						$("<div />", { "class": "example-panel" })
+							.append($("<pre />", { text: createDocument.toString() }))
+						
+					)
+			);
+			
+		createDocument();
+});
+	
 </script>
 </body>
 </html>
