@@ -238,7 +238,11 @@ class PDFImage extends PDFObject
 		)
 		
 	streamString: ->
-		new PDFStream(if typeof @imageData isnt "string" then Crypto.charenc.Binary.bytesToString(@imageData) else @imageData)
+		if typeof @imageData isnt "string"
+			if @imageData.length / (@size.width * @size.height) is 4
+				@imageData = (byte for byte, index in @imageData when (index + 1) % 4 isnt 0)
+			@imageData = Crypto.charenc.Binary.bytesToString(@imageData)
+		new PDFStream(@imageData)
 		
 	paintImageString: (imageName) ->
 		"""
