@@ -1,1 +1,1 @@
-coffee -o lib/ -c src/coffeepdf.coffee
+coffee -j -o lib/ -c src/*.coffee; cp lib/concatenation.js lib/coffeepdf.js; rm lib/concatenation.js;
