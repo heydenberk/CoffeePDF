@@ -1,304 +1,125 @@
+Math._round = Math.round
+Math.round = (number, precision = 0) ->
+	Math._round(number * (coefficient = Math.pow(10, precision))) / coefficient
+
 class window.CoffeePDF
-	constructor: (@orientation = "P", @unit = "mm", @format = "a4") ->
+	constructor: (@orientation = "portrait", @unit = "mm", @format = "a4") ->
+		@init()
 		
 	constants:
-		drawColor: "0 G"
-		lineWidth: 0.200025
-		pageFormats: # Size in pt of various paper formats
-			a3:
-				width: 841.89, height: 1190.55
-			a4:
-				width: 595.28, height: 841.89
-			a5:
-				width: 420.94, height: 595.28
-			letter:
-				width: 612, height: 792
-			legal:
-				width: 612, height: 1008
-		textColor: "0 g"
-		pdfVersion: "1.3"
-		version: "20100328"
-		
-	create: ->
-		@getScaleFactor()
-		@getPageDimensions()
-		@getOrientation()
+		pageFormats:
+			a3: { width: 841.89, height: 1190.55 }
+			a4: { width: 595.28, height: 841.89 }
+			a5: { width: 420.94, height: 595.28 }
+			letter: { width: 612, height: 792 }
+			legal: { width: 612, height: 1008 }
+
+		pdfVersion: "1.6"
+		version: "0.1"
+	
+	init: ->
+		# These are 'private' functions
+		getScaleFactor = =>
+			switch @unit
+				when "pt" then @scaleFactor = 1
+				when "mm" then @scaleFactor = 72/25.4
+				when "cm" then @scaleFactor = 72/2.54
+				when "in" then @scaleFactor = 72
+				else throw "Invalid unit #{ @unit }"
+
+		getPageDimensions = =>
+			if typeof @format is "string"
+				if @format of @constants.pageFormats
+					@pageSize = 
+						height: @constants.pageFormats[@format].height / @scaleFactor
+						width: @constants.pageFormats[@format].width / @scaleFactor
+				else
+					throw "Invalid format #{ @format }"
+			else
+				[@pageSize.width, @pageSize.height] = @format
+
+		getOrientation = =>
+			if @orientation is "landscape"
+				[@pageSize.width, @pageSize.height] = [@pageSize.height, @pageSize.width]
+			else if @orientation isnt "portrait"
+				@orientation = "portrait"
+
+		getScaleFactor()
+		getPageDimensions()
+		getOrientation()
 		@addPage()
 		
-		@jsPDF =		
-			addPage: =>
-				@addPage()
-				@jsPDF
-				
-			text: (x, y, text) =>
-				# need page height
-				if @pageFontSize isnt @fontSize
-					@out("BT /F1 " + parseInt(@fontSize) + ".00 Tf ET")
-					@pageFontSize = @fontSize
-					
-				@out(sprintf("BT %.2f %.2f Td (%s) Tj ET", x * @scaleFactor, (@pageSize.height - y) * @scaleFactor, @pdfEscape(text)))
-				@jsPDF
+	setFontSize: (@fontSize) ->
 
-			line: (x1, y1, x2, y2) =>
-				@out(sprintf("%.2f %.2f m %.2f %.2f l S", x1 * @scaleFactor, (@pageSize.height - y1) * @scaleFactor, x2 * @scaleFactor, (@pageSize.height - y2) * @scaleFactor))
-				@jsPDF
+	setProperties: (@documentProperties) ->
 
-			rect: (x, y, w, h, style) =>
-				op = "S"
-				if style is "F"
-					op = "f"
-				else if style is "FD" or style is "DF"
-					op = "B"
-				@out(sprintf("%.2f %.2f %.2f %.2f re %s", x * @scaleFactor, (@pageSize.height - y) * @scaleFactor, w * @scaleFactor, -h * @scaleFactor, op))
-
-			setProperties: (@documentProperties) =>
-				@jsPDF
-				
-			addImage: (imageData, format, x, y, w, h) =>
-				@jsPDF
-				
-			output: (type, options) =>
-				@endDocument()
-				if type is "datauri"
-					document.location.href = "data:application/pdf;base64," + Base64.encode(@buffer)
-				else
-					@buffer
-			
-			setFontSize: (@fontSize) =>
-				@jsPDF
-				
-			setLineWidth: (width) =>
-				@out(sprintf("%.2f w", (width * @scaleFactor)))
-				@jsPDF
-				
-			setDrawColor: (r,g,b) =>
-				if (r is 0 and g is 0 and b is 0) or g is undefined
-					color = sprintf("%.3f G", r/255)
-				else
-					color = sprintf("%.3f %.3f %.3f RG", r/255, g/255, b/255)
-				@out(color)
-				@jsPDF
-		
-	getOrientation: ->
-		@orientation = @orientation.toLowerCase()
-		if @orientation is "p" then @orientation = "portrait"
-		if @orientation is "l" then @orientation = "landscape"
-		
-		if @orientation is "landscape"
-			[@pageSize.width, @pageSize.height] = [@pageSize.height, @pageSize.width]
-		else if @orientation isnt "portrait"
-			throw "Invalid orientation #{ orientation }"
-		
-	getPageDimensions: ->
-		if typeof @format is "string"
-			@format = @format.toLowerCase()
-			if @format of @constants.pageFormats
-				@pageSize = @constants.pageFormats[@format]
-				@pageSize.height /= @scaleFactor
-				@pageSize.width /= @scaleFactor
-			else
-				throw "Invalid format #{ @format }"
-		else
-			[@pageSize.width, @pageSize.height] = @format
-		
-	getScaleFactor: ->
-		switch @unit
-			when "pt" then @scaleFactor = 1
-			when "mm" then @scaleFactor = 72/25.4
-			when "cm" then @scaleFactor = 72/2.54
-			when "in" then @scaleFactor = 72
-			else throw "Invalid unit #{ @unit }"
-			
-	newObject: ->
-		@objectNumber += 1
-		@offsets[@objectNumber] = @buffer.length
-		@out("#{ @objectNumber } 0 obj")
-		
-	putHeader: ->
-		@out("%PDF-" + @constants.pdfVersion)
-		
-	putPages: ->
-		pointSize =
-			height: @pageSize.height * @scaleFactor
-			width: @pageSize.width * @scaleFactor
-			
-		for n in [1..@page]
-			@newObject()
-			@out("<</Type /Page")
-			@out("/Parent 1 0 R")	
-			@out("/Resources 2 0 R")
-			@out("/Contents #{ @objectNumber + 1 } 0 R>>")
-			@out("endobj")
-			
-			# Page content
-			p = @pages[n]
-			@newObject()
-			@out("<</Length #{ p.length }>>")
-			@putStream(p)
-			@out("endobj")
-			
-		@offsets[1] = @buffer.length
-		@out("1 0 obj")
-		@out("<</Type /Pages")
-		kids = "/Kids ["
-		for i in [0...@page]
-			kids += (3 + 2 * i) + " 0 R "
-
-		@out(kids + "]")
-		@out("/Count " + @page)
-		@out(sprintf("/MediaBox [0 0 %.2f %.2f]", pointSize.width, pointSize.height))
-		@out(">>")
-		@out("endobj")
-		
-	putStream: (str) ->
-		@out("stream")
-		@out(str)
-		@out("endstream")
-		
-	putResources: ->
-		@putFonts()
-		@putImages()
-		
-		# Resource dictionary
-		@offsets[2] = @buffer.length
-		@out("2 0 obj")
-		@out("<<")
-		@putResourceDictionary()
-		@out(">>")
-		@out("endobj")
-		
-	putFonts: ->
-		@newObject()
-		@fontNumber = @objectNumber
-		name = "Helvetica"
-		@out("<</Type /Font")
-		@out("/BaseFont /#{ name }")
-		@out("/Subtype /Type1")
-		@out("/Encoding /WinAnsiEncoding")
-		@out(">>")
-		@out("endobj")
-		
-	putImages: ->
-		#@TODO
-		
-	putResourceDictionary: ->
-		@out("/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]")
-		@out("/Font <<")
-		# Do this for each font, the "1" bit is the index of the font
-		# fontNumber is currently the object number related to "putFonts"
-		@out("/F1 #{ @fontNumber } 0 R")
-		@out(">>")
-		@out("/XObject <<")
-		@putXobjectDict()
-		@out(">>")
-		
-	putXobjectDict: ->
-		#@TODO
-		
-	putInfo: ->
-		@out("/Producer (jsPDF #{ @constants.version })")
-		if @documentProperties.title?
-			@out("/Title (#{ @pdfEscape(@documentProperties.title) })")
-
-		if @documentProperties.subject?
-			@out("/Subject (#{ @pdfEscape(@documentProperties.subject) })")
-		
-		if @documentProperties.author?
-			@out("/Author (#{ @pdfEscape(@documentProperties.author) })")
-
-		if @documentProperties.keywords?
-			@out("/Keywords (#{ @pdfEscape(@documentProperties.keywords) })")
-
-		if @documentProperties.creator?
-			@out("/Creator (#{ @pdfEscape(@documentProperties.creator) })")
-
-		created = new Date()
-		@out("/CreationDate (D:" + sprintf("%02d%02d%02d%02d%02d%02d", created.getFullYear(), (created.getMonth() + 1), created.getDate(), created.getHours(), created.getMinutes(), created.getSeconds()) + ")")
-		
-	putCatalog: ->
-		@out("/Type /Catalog")
-		@out("/Pages 1 0 R")
-		# @TODO: Add zoom and layout modes
-		@out("/OpenAction [3 0 R /FitH null]")
-		@out("/PageLayout /OneColumn")	
+	addPage: -> @pages.push(new PDFPage())
 	
-	putTrailer: ->
-		@out("/Size #{ @objectNumber + 1 }")
-		@out("/Root #{ @objectNumber } 0 R")
-		@out("/Info #{ (@objectNumber - 1) } 0 R")
-	
-	endDocument: ->
-		@state = 1
-		@putHeader()
-		@putPages()
+	coordsOnPage: ({ x, y }) ->
+		x: Math.round(x * @scaleFactor, 2)
+		y: Math.round((@pageSize.height - y) * @scaleFactor, 2)
 		
-		@putResources()
-		# Info
-		@newObject()
-		@out("<<")
-		@putInfo()
-		@out(">>")
-		@out("endobj")
+	sizeOnPage: ({ height, width }) ->
+		height: height * @scaleFactor * -1
+		width: width * @scaleFactor
 		
-		# Catalog
-		@newObject()
-		@out("<<")
-		@putCatalog()
-		@out(">>")
-		@out("endobj")
+	add: (object, pageNumber = @pages.length - 1) ->
+		@pages[pageNumber].add(object)
+	
+	addText: (text, rawPoint) ->
+		@add(
+			new PDFText(
+				new PDFString(text), 1, @fontSize, @coordsOnPage(rawPoint), new PDFFillColor([0, 0, 0])
+			)
+		)
 		
-		# Cross-ref
-		o = @buffer.length
-		@out("xref")
-		@out("0 " + (@objectNumber + 1))
-		@out("0000000000 65535 f ")
-		for i in [1..@objectNumber]
-			@out(sprintf("%010d 00000 n ", @offsets[i]))
-		# Trailer
-		@out("trailer")
-		@out("<<")
-		@putTrailer()
-		@out(">>")
-		@out("startxref")
-		@out(o)
-		@out("%%EOF")
-		@state = 3
-	
-	beginPage: ->
-		@page += 1
-		# Do dimension stuff
-		@state = 2
-		@pages[@page] = ""
-	
-	out: (string) ->
-		if @state is 2
-			@pages[@page] += "#{ string }\n"
-		else
-			@buffer += "#{ string }\n"
-	
-	addPage: ->
-		@beginPage()
-		# Set line width
-		@out(sprintf("%.2f w", (@constants.lineWidth * @scaleFactor)))
-		# Set draw color
-		@out(@constants.drawColor)
+	addPath: (rawPoints, strokeColor, fillColor) ->
+		@add(
+			new PDFPath(
+				(@coordsOnPage(rawPoint) for rawPoint in rawPoints), 
+				new PDFStrokeColor(strokeColor) if strokeColor,
+				new PDFFillColor(fillColor) if fillColor
+			)
+		)
 		
-		# Set font - TODO
-		# 16 is the font size
-		@pageFontSize = @fontSize
-		@out("BT /F1 " + parseInt(@fontSize) + ".00 Tf ET")
+	addRectangle: (rawPoint, rawSize, strokeColor, fillColor) ->
+		@add(
+			new PDFRectangle(
+				@coordsOnPage(rawPoint),
+				@sizeOnPage(rawSize),
+				new PDFStrokeColor(strokeColor) if strokeColor,
+				new PDFFillColor(fillColor) if fillColor
+			)
+		)
+		
+	addResource: (resourceName, resource) ->
+		@resources[resourceName] = resource
+		
+	addImageResource: (imageName, image) ->	
+		@add(image.paintImageString(imageName))
+		@addResource(imageName, image)
+		
+	addImage: (rawPoint, rawSize, imageData) ->
+		@addImageResource(
+			new PDFName("Image#{ @imageCount += 1 }"),
+			new PDFImage(@coordsOnPage(rawPoint), rawSize, imageData, 0.5)
+		)
+	
+	build: ->
+		new PDFDocument(
+			@constants.pdfVersion,
+			{ width: @pageSize.width * @scaleFactor, height: @pageSize.height * @scaleFactor },
+			@documentProperties,
+			@pages,
+			@resources
+		)
 
-	pdfEscape: (text) ->
-		text.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)")
-		
 	buffer: ""
 	documentProperties: {}
-	fontNumber: undefined
 	fontSize: 16
-	objectNumber: 2
+	imageCount: 0
 	offsets: []
-	page: 0
 	pageFontSize: 16
 	pageSize: {}
 	pages: []
-	state: 0
+	resources: {}
