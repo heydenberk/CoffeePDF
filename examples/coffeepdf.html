@@ -65,7 +65,7 @@ function getImageData(src, cb) {
 		canvas.width = image.width;
 		canvas.height = image.height;
 		ctx.drawImage(image, 0, 0, image.width, image.height);
-		cb(canvas.toDataURL().slice(22), { width: image.width, height: image.height });
+		cb(ctx.getImageData(0, 0, image.width, image.height).data, { width: image.width, height: image.height });
 	};
 	
 	image.crossOrigin = "anonymous";
