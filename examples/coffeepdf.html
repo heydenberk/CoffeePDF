@@ -89,6 +89,10 @@ function createDocument() {
 			{ height: imageSize.height, width: imageSize.width },
 			imageData
 		);
+		
+		doc.addScript(function() {
+			this.print({ bUi: true, bSilent: false, bShrinkToFit: true });
+		});
 
 		$("div.example")
 			.append(

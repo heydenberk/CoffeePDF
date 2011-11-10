@@ -256,15 +256,18 @@ class PDFImage extends PDFObject
 		#{ @stream }"""
 
 class PDFDocument
-	constructor: (@version, @pageSize, @properties, @pageObjects, @resources) ->
+	constructor: (@version, @pageSize, @properties, @pageObjects, @resources, @script) ->
 		
 	addCatalog: ->
-		@objects.push(
+		@addObject("catalog",
 			new PDFDictionary(
+				Names: new PDFDictionary(
+					JavaScript: @objectReferences.script
+				)
 				Type: new PDFName("Catalog")
 				Pages: @objectReferences.pageTable
 				OpenAction: new PDFArray([
-					new PDFReference(3, 0),
+					@objectReferences.pageTable,
 					new PDFName("FitH"),
 					new PDFNull()
 				])
@@ -273,7 +276,7 @@ class PDFDocument
 		)
 		
 	addDocumentInformation: ->
-		@objects.push(
+		@addObject("documentInformation",
 			new PDFDictionary(
 				Title: new PDFString(@properties.title) if @properties.title
 				Subject: new PDFString(@properties.subject) if @properties.subject
@@ -312,7 +315,6 @@ class PDFDocument
 			)
 			@objects.push(pageObject.dictionary)
 			@objects.push(pageObject.stream)
-			
 		@pagesEnd = @objects.length
 		
 	pageReference: (pageNumber, contents = false) ->
@@ -373,8 +375,8 @@ class PDFDocument
 		@objects.push(
 			new PDFTrailer(@offsetSum,
 				Size: new PDFNumber(@objects.length - 1)
-				Root: new PDFReference(@objects.length - 2, 0)
-				Info: new PDFReference(@objects.length - 3, 0)
+				Root: @objectReferences.catalog
+				Info: @objectReferences.documentInformation
 			)
 		)
 		
@@ -385,7 +387,20 @@ class PDFDocument
 				@offsets[objectIndex] = objectString.length
 			@buffer += objectString
 			
+	addScript: ->
+		if @script
+			@objects.push(@script)
+			@addObject("script",
+				new PDFDictionary(
+					Names: new PDFArray([
+						new PDFString("0000000000000000"),
+						new PDFReference(@objects.length, 0)
+					])
+				)
+			)
+			
 	addBody: ->
+		@addScript()
 		@addResourceDictionary()
 		@addPageTable()
 		@addPages()
@@ -416,7 +431,7 @@ class PDFDocument
 	offsets: []
 	pages: 0
 
-class PDFPage
+class PDFPage extends PDFObject
 	add: (object) ->
 		@objects.push(object)
 		
@@ -435,3 +450,21 @@ class PDFPage
 		)
 	
 	objects: []
+	
+class PDFScript extends PDFObject
+	constructor: (@fn) ->
+		
+	dictionaryString: ->
+		new PDFDictionary(
+			S: new PDFName("JavaScript")
+			JS: new PDFString("#{ @functionString() }")
+		)
+		
+	functionString: ->
+		alert @fn.toString().slice(13, -1)
+		@fn.toString().slice(13, -1)
+		
+	toString: ->
+		"#{ @dictionaryString() }"
+	
+	

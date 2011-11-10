@@ -105,13 +105,17 @@ class window.CoffeePDF
 			new PDFImage(@coordsOnPage(rawPoint), rawSize, imageData, 0.5)
 		)
 	
+	addScript: (fn) ->
+		@script = new PDFScript(fn)
+	
 	build: ->
 		new PDFDocument(
 			@constants.pdfVersion,
 			{ width: @pageSize.width * @scaleFactor, height: @pageSize.height * @scaleFactor },
 			@documentProperties,
 			@pages,
-			@resources
+			@resources,
+			@script
 		)
 
 	buffer: ""
@@ -123,3 +127,4 @@ class window.CoffeePDF
 	pageSize: {}
 	pages: []
 	resources: {}
+	script: null
